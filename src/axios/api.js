@@ -2,7 +2,7 @@
  * @Descripttion: 接口配置
  * @Author: Hades
  * @Date: 2020-05-20 10:32:53
- * @LastEditTime: 2020-11-11 14:02:26
+ * @LastEditTime: 2020-11-12 11:00:55
  */ 
 let serverUrl = ''
 
@@ -20,5 +20,6 @@ export default {
     login:serverUrl+'/api/auth/login',//管理员登录
     shop:serverUrl+'/api/shop',//获取店铺
     billRecord:serverUrl+'/api/date/bill/record',//获取账单
+    billAdd:serverUrl+'/api/bill/record',// 添加账单
     
 }
