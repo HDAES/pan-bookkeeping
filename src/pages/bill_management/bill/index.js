@@ -2,14 +2,14 @@
  * @Descripttion: 订单
  * @Author: Hades
  * @Date: 2020-11-11 12:23:23
- * @LastEditTime: 2020-11-12 11:08:26
+ * @LastEditTime: 2020-11-13 13:19:31
  */
 import React, { useEffect, useState } from 'react';
 import moment from 'moment'
 import { Card, Select, Form, DatePicker, Button, Table, Modal, Input, message } from 'antd';
 import { connect } from 'react-redux'
 
-import { getBillRecord,postBillAdd } from '../../../axios/index'
+import { getBillRecord,postBillAdd,patchBillAdd } from '../../../axios/index'
 import { formateMoneyType } from '../../../utils'
 const mapStateToProps = state => {
     return {
@@ -19,7 +19,7 @@ const mapStateToProps = state => {
 
 export default connect(mapStateToProps)(({ shops }) => {
 
-
+    
     const [shopId, setShopId] = useState(shops[0].id)    //店铺ID
     const [billList, setBillList] = useState()   //账单列表
     const [loading, setLoading] = useState(false) //表格加载状态
@@ -27,6 +27,7 @@ export default connect(mapStateToProps)(({ shops }) => {
     const [times, SetTimes] = useState(['', ''])
     const [editVisible, SetEditVisible] = useState(false) //添加或者修改弹窗
     const [isAdd,SetIsAdd] = useState(true) // true 添加 false  修改
+    const [billId, setBillId] = useState()  //账单ID
     const [paginationInfo, setPaginationInfo] = useState({
         page: 1,
         total: 0,
@@ -68,6 +69,9 @@ export default connect(mapStateToProps)(({ shops }) => {
                         message.success('添加成功')
                     }
                 })
+            }else{
+                let time = moment(value.date).format('YYYY-MM-DD')
+                patchBillAdd({...value,time,id:billId})
             }
          })
     }
@@ -75,6 +79,14 @@ export default connect(mapStateToProps)(({ shops }) => {
     function onFinish(fieldsValue) {
         setShopId(fieldsValue.shopId)
         SetTimes([moment(fieldsValue.times[0]).format('YYYY-MM-DD'), moment(fieldsValue.times[1]).format('YYYY-MM-DD')])
+    }
+
+    //编辑
+    function editHandle(item){
+        SetIsAdd(false)
+        SetEditVisible(true)
+        setBillId(item.id)
+        billFrom.setFieldsValue({...item,date:moment(item.date)})
     }
     //表格底部fotter
     function footer() {
@@ -135,6 +147,24 @@ export default connect(mapStateToProps)(({ shops }) => {
             dataIndex: 'updateTime',
             key: 'updateTime',
         },
+        {
+            title: '操作',
+            key: 'operation',
+            fixed: 'right',
+            align:'center',
+            width: 200,
+            render: (e) => <div style={{display:'flex'}}>
+                    <Button type="link" onClick={()=>editHandle(e)} >
+                        编辑
+                    </Button>
+                    <Button type="link" style={{margin:"0 20px"}} >
+                        查看
+                    </Button>
+                    <Button type="link" danger  >
+                        删除
+                    </Button>
+                </div>
+        }
     ]
     const layout = {
         labelCol: { span: 4 },
@@ -217,8 +247,13 @@ export default connect(mapStateToProps)(({ shops }) => {
                     <DatePicker  />
                 </Form.Item>
                 <Form.Item label="具体描述" name="content" rules={[{ required: true, message: '请输入具体描述'}]}>
-                    <Input.TextArea showCount maxLength={100} placeholder="Input specific description " />
+                    <Input.TextArea  placeholder="Input specific description " />
                 </Form.Item>
+                {
+                    !isAdd? <Form.Item label="修改账单" name="updateAccountContent" rules={[{ required: true, message: '请输入修改原因'}]}>
+                        <Input.TextArea   placeholder="Input specific description " />
+                    </Form.Item>:null
+                }
             </Form>
         </Modal>
 
