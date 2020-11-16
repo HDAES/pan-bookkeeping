@@ -2,7 +2,7 @@
  * @Descripttion: 订单
  * @Author: Hades
  * @Date: 2020-11-11 12:23:23
- * @LastEditTime: 2020-11-13 13:19:31
+ * @LastEditTime: 2020-11-16 13:41:14
  */
 import React, { useEffect, useState } from 'react';
 import moment from 'moment'
@@ -28,6 +28,8 @@ export default connect(mapStateToProps)(({ shops }) => {
     const [editVisible, SetEditVisible] = useState(false) //添加或者修改弹窗
     const [isAdd,SetIsAdd] = useState(true) // true 添加 false  修改
     const [billId, setBillId] = useState()  //账单ID
+    const [refresh, setRefresh] = useState(false) 
+    const [confirmLoading,SetConfirmLoading] = useState(false)
     const [paginationInfo, setPaginationInfo] = useState({
         page: 1,
         total: 0,
@@ -39,7 +41,7 @@ export default connect(mapStateToProps)(({ shops }) => {
 
     useEffect(() => {
         bill(shopId, paginationInfo.page, paginationInfo.pageSize, times[0], times[1])
-    }, [shopId, paginationInfo.page, paginationInfo.pageSize, times])
+    }, [refresh,shopId, paginationInfo.page, paginationInfo.pageSize, times])
 
     function bill(shopId, page, size, starTime, endTime) {
         setLoading(true)
@@ -54,24 +56,30 @@ export default connect(mapStateToProps)(({ shops }) => {
             SetBillStatistics({ allMoney: res.allMoney, incomeMoney: res.incomeMoney, paymentMoney: res.paymentMoney })
         })
     }
-
-    //添加账单
-    // function addBill(){
-    //     console.log(123)
-    // }
     //保存或者添加
     function handleSava() {
+        
         billFrom.validateFields().then(value => {
+            SetConfirmLoading(true)
             if(isAdd){
-                postBillAdd(value).then( res =>{
+                postBillAdd({...value,date:moment(value.date).format('YYYY-MM-DD')}).then( res =>{
                     if(res.code === 200){
                         SetEditVisible(false)
+                        setRefresh(!refresh)
                         message.success('添加成功')
                     }
+                    SetConfirmLoading(false)
                 })
             }else{
-                let time = moment(value.date).format('YYYY-MM-DD')
-                patchBillAdd({...value,time,id:billId})
+                let date = moment(value.date).format('YYYY-MM-DD')
+                patchBillAdd({...value,date,id:billId}).then(res =>{
+                    if(res.code === 200){
+                        SetEditVisible(false)
+                        setRefresh(!refresh)
+                        message.success('修改成功')
+                    }
+                    SetConfirmLoading(false)
+                })
             }
          })
     }
@@ -86,7 +94,13 @@ export default connect(mapStateToProps)(({ shops }) => {
         SetIsAdd(false)
         SetEditVisible(true)
         setBillId(item.id)
-        billFrom.setFieldsValue({...item,date:moment(item.date)})
+        billFrom.setFieldsValue({...item,date:moment(item.date),updateAccountContent:''})
+    }
+    //新增按钮
+    function addBtn(){
+        SetEditVisible(true);
+        SetIsAdd(true)
+        billFrom.setFieldsValue({money:'',content:''})
     }
     //表格底部fotter
     function footer() {
@@ -192,7 +206,7 @@ export default connect(mapStateToProps)(({ shops }) => {
                     </Form.Item>
                 </Form>
 
-                <Button onClick={()=>{SetEditVisible(true);SetIsAdd(true)}}>新增</Button>
+                <Button onClick={addBtn}>新增</Button>
             </div>
         </Card>
         <Table
@@ -214,6 +228,9 @@ export default connect(mapStateToProps)(({ shops }) => {
             title={isAdd?'添加':'修改'}
             visible={editVisible}
             onOk={handleSava}
+            confirmLoading={confirmLoading}
+            okText="保存"
+            cancelText="取消"
             onCancel={()=>SetEditVisible(false)}
         >
             <Form form={billFrom} {...layout}>
@@ -250,7 +267,7 @@ export default connect(mapStateToProps)(({ shops }) => {
                     <Input.TextArea  placeholder="Input specific description " />
                 </Form.Item>
                 {
-                    !isAdd? <Form.Item label="修改账单" name="updateAccountContent" rules={[{ required: true, message: '请输入修改原因'}]}>
+                    !isAdd? <Form.Item label="修改原因" name="updateAccountContent" rules={[{ required: true, message: '请输入修改原因'}]}>
                         <Input.TextArea   placeholder="Input specific description " />
                     </Form.Item>:null
                 }

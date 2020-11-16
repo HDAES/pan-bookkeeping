@@ -2,7 +2,7 @@
  * @Descripttion: 封装请求方法
  * @Author: Hades
  * @Date: 2020-05-20 10:31:27
- * @LastEditTime: 2020-11-12 10:14:26
+ * @LastEditTime: 2020-11-16 13:40:13
  */
 
 import axios from 'axios'
@@ -29,8 +29,8 @@ export default (options) => {
                         resolve(res.data)
                     }
                    
-                } else if(res.code === 201 ) {
-                    reject(res)
+                }else if(res.code === 201 ) {
+                    resolve(res)
                     message.error(JSON.stringify(res.message))
                 }else if(res.code === 401){
                     window.location.href='/#/login'
