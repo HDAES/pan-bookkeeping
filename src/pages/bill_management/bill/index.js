@@ -2,14 +2,14 @@
  * @Descripttion: 订单
  * @Author: Hades
  * @Date: 2020-11-11 12:23:23
- * @LastEditTime: 2020-11-16 13:41:14
+ * @LastEditTime: 2020-11-16 22:19:38
  */
 import React, { useEffect, useState } from 'react';
 import moment from 'moment'
-import { Card, Select, Form, DatePicker, Button, Table, Modal, Input, message } from 'antd';
+import { Card, Select, Form, DatePicker, Button, Table, Modal, Input, message, Popconfirm } from 'antd';
 import { connect } from 'react-redux'
 
-import { getBillRecord,postBillAdd,patchBillAdd } from '../../../axios/index'
+import { getBillRecord,postBillAdd,patchBillAdd ,DeleteBillAdd,GetBillLog} from '../../../axios/index'
 import { formateMoneyType } from '../../../utils'
 const mapStateToProps = state => {
     return {
@@ -24,21 +24,21 @@ export default connect(mapStateToProps)(({ shops }) => {
     const [billList, setBillList] = useState()   //账单列表
     const [loading, setLoading] = useState(false) //表格加载状态
     const [billStatistics, SetBillStatistics] = useState({ allMoney: 0, incomeMoney: 0, paymentMoney: 0 })
-    const [times, SetTimes] = useState(['', ''])
+    const [times, SetTimes] = useState(['', '']) //起始时间
     const [editVisible, SetEditVisible] = useState(false) //添加或者修改弹窗
+    const [logsVisible, SetLogsVisible] = useState(false) //日志弹窗显示
     const [isAdd,SetIsAdd] = useState(true) // true 添加 false  修改
-    const [billId, setBillId] = useState()  //账单ID
-    const [refresh, setRefresh] = useState(false) 
-    const [confirmLoading,SetConfirmLoading] = useState(false)
+    const [billId, setBillId] = useState()  //修改时账单ID
+    const [refresh, setRefresh] = useState(false) //刷新列表
+    const [confirmLoading,SetConfirmLoading] = useState(false) // 编辑 保存状态
+    const [billLogs,SetBillLogs] = useState()
     const [paginationInfo, setPaginationInfo] = useState({
         page: 1,
         total: 0,
         pageSize: 50
     })
     const [form] = Form.useForm();
-
     const [billFrom] = Form.useForm();
-
     useEffect(() => {
         bill(shopId, paginationInfo.page, paginationInfo.pageSize, times[0], times[1])
     }, [refresh,shopId, paginationInfo.page, paginationInfo.pageSize, times])
@@ -57,8 +57,7 @@ export default connect(mapStateToProps)(({ shops }) => {
         })
     }
     //保存或者添加
-    function handleSava() {
-        
+    function handleSava() {  
         billFrom.validateFields().then(value => {
             SetConfirmLoading(true)
             if(isAdd){
@@ -101,6 +100,22 @@ export default connect(mapStateToProps)(({ shops }) => {
         SetEditVisible(true);
         SetIsAdd(true)
         billFrom.setFieldsValue({money:'',content:''})
+    }
+    //删除账单
+    function DeleteBill(item){
+        DeleteBillAdd(item.id).then( res =>{
+            if(res.code === 200){
+                message.success('删除成功')
+                setRefresh(!refresh)
+            }
+        })
+    }
+    //显示日志
+    function ShowLogs(item){
+        SetLogsVisible(true)
+        GetBillLog(item.id).then( res =>{
+            SetBillLogs(res)
+        })
     }
     //表格底部fotter
     function footer() {
@@ -149,8 +164,6 @@ export default connect(mapStateToProps)(({ shops }) => {
             dataIndex: 'updateCount',
             key: 'updateCount',
         },
-
-
         {
             title: '账单日期',
             dataIndex: 'date',
@@ -171,14 +184,48 @@ export default connect(mapStateToProps)(({ shops }) => {
                     <Button type="link" onClick={()=>editHandle(e)} >
                         编辑
                     </Button>
-                    <Button type="link" style={{margin:"0 20px"}} >
-                        查看
+                    <Button type="link" style={{margin:"0 20px"}} onClick={() =>ShowLogs(e)}>
+                        日志
                     </Button>
-                    <Button type="link" danger  >
-                        删除
-                    </Button>
+                    <Popconfirm
+                        title="是否删除该账单？"
+                        okText="删除"
+                        cancelText="取消"
+                        onConfirm={()=>DeleteBill(e)}
+                        onCancel={()=> message.error('已取消')}
+                    >
+                        <Button type="link" danger >删除</Button>
+                    </Popconfirm>
+                    
                 </div>
         }
+    ]
+    const logColumns = [
+        {
+            title: '昵称',
+            dataIndex: 'nickName',
+            key: 'nickName',
+        },
+        {
+            title: '原价格',
+            dataIndex: 'oldMoney',
+            key: 'oldMoney',
+        },
+        {
+            title: '新价格',
+            dataIndex: 'newMoney',
+            key: 'newMoney',
+        },
+        {
+            title: '原因',
+            dataIndex: 'content',
+            key: 'content',
+        },
+        {
+            title: '修改时间',
+            dataIndex: 'createTime',
+            key: 'createTime',
+        },
     ]
     const layout = {
         labelCol: { span: 4 },
@@ -273,6 +320,18 @@ export default connect(mapStateToProps)(({ shops }) => {
                 }
             </Form>
         </Modal>
-
+        
+        <Modal
+            title="操作日志"
+            footer={null}
+            width={800}
+            visible={logsVisible}
+            onCancel={()=>SetLogsVisible(false)}
+        >
+            <Table  
+                columns={logColumns}
+                dataSource={billLogs}
+                rowKey={record => record.id}/>
+        </Modal>
     </div>
 }) 

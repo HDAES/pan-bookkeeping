@@ -2,7 +2,7 @@
  * @Descripttion: 请求方法
  * @Author: Hades
  * @Date: 2020-05-20 10:35:49
- * @LastEditTime: 2020-11-13 09:59:58
+ * @LastEditTime: 2020-11-16 22:00:27
  */ 
 
  import http from './http'
@@ -42,6 +42,7 @@ export async function postBillAdd(data){
    })
 }
 
+//修改账单
 export async function patchBillAdd(data){
    return http({
       method:'patch',
@@ -51,3 +52,19 @@ export async function patchBillAdd(data){
    })
 }
 
+//删除账单
+export async function DeleteBillAdd(params){
+   return http({
+      method:'DELETE',
+      url:api.billAdd+`?id=${params}`,
+      all:true
+   })
+}
+
+//获取账单日志
+export async function GetBillLog(params){
+   return http({
+      method:'get',
+      url:api.billLog+`?accountId=${params}`
+   })
+}
